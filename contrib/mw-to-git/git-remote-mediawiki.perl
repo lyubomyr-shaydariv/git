@@ -17,6 +17,7 @@ use Git;
 use Git::Mediawiki qw(clean_filename smudge_filename connect_maybe
 					EMPTY HTTP_CODE_OK);
 use DateTime::Format::ISO8601;
+use Scalar::Util;
 use warnings;
 
 # By default, use UTF-8 to communicate with Git and the user
@@ -1314,7 +1315,6 @@ my %cached_mw_namespace_id;
 sub get_mw_namespace_id {
 	$mediawiki = connect_maybe($mediawiki, $remotename, $url);
 	my $name = shift;
-
 	if (!exists $namespace_id{$name}) {
 		# Look at configuration file, if the record for that namespace is
 		# already cached. Namespaces are stored in form:
@@ -1383,7 +1383,12 @@ sub get_mw_namespace_id {
 sub get_mw_namespace_id_for_page {
 	my $namespace = shift;
 	if ($namespace =~ /^([^:]*):/) {
-		return get_mw_namespace_id($namespace);
+		my ($ns, $id) = split(/:/, $namespace);
+		if (Scalar::Util::looks_like_number($id)) {
+			return get_mw_namespace_id($ns);
+		} else{
+			return
+		}
 	} else {
 		return;
 	}
