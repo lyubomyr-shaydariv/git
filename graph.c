@@ -81,6 +81,7 @@ static void graph_show_line_prefix(const struct diff_options *diffopt)
 
 static const char **column_colors;
 static unsigned short column_colors_max;
+static int show_root_mark;
 
 static void parse_graph_colors_config(struct strvec *colors, const char *string)
 {
@@ -339,6 +340,16 @@ void graph_setup_line_prefix(struct diff_options *diffopt)
 }
 
 
+static int git_graph_config(const char *var, const char *value, void *cb)
+{
+	if (!strcmp(var, "log.showrootmark")) {
+		show_root_mark = git_config_bool(var, value);
+		return 0;
+	}
+
+	return git_default_config(var, value, cb);
+}
+
 struct git_graph *graph_init(struct rev_info *opt)
 {
 	struct git_graph *graph = xmalloc(sizeof(struct git_graph));
@@ -359,6 +370,7 @@ struct git_graph *graph_init(struct rev_info *opt)
 						custom_colors.nr - 1);
 		}
 	}
+	git_config(git_graph_config, NULL);
 
 	graph->commit = NULL;
 	graph->revs = opt;
@@ -925,6 +937,23 @@ static void graph_output_commit_char(struct git_graph *graph, struct graph_line 
 	if (graph->commit->object.flags & BOUNDARY) {
 		assert(graph->revs->boundary);
 		graph_line_addch(line, 'o');
+		return;
+	}
+
+	/*
+	 * If the commit has no parents, it's a root commit
+	 */
+	if (show_root_mark && !graph->num_parents) {
+		char mark;
+		if (!graph->revs || graph->revs->left_right) {
+			if (graph->commit->object.flags & SYMMETRIC_LEFT)
+				mark = '[';
+			else
+				mark = ']';
+		} else {
+			mark = '@';
+		}
+		strbuf_addch(sb, mark);
 		return;
 	}
 
