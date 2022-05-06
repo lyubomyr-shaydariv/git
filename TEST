@@ -1,0 +1,3 @@
+#!/bin/sh
+
+./git log -20 --graph --pretty=format:'jt=%jt	jt=%jr	jh=%jh' --
