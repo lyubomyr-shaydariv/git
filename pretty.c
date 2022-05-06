@@ -459,6 +459,27 @@ const char *show_ident_date(const struct ident_split *ident,
 	return show_date(date, tz, mode);
 }
 
+void show_cross_ident_date(struct strbuf *sb,
+			   const struct ident_split *author_ident,
+			   const struct ident_split *committer_ident,
+			   const struct date_mode mode)
+{
+	timestamp_t author_date = 0;
+	timestamp_t committer_date = 0;
+
+	if (author_ident->date_begin && author_ident->date_end)
+		author_date = parse_timestamp(author_ident->date_begin, NULL, 10);
+	if (date_overflows(author_date))
+		author_date = 0;
+
+	if (committer_ident->date_begin && committer_ident->date_end)
+		committer_date = parse_timestamp(committer_ident->date_begin, NULL, 10);
+	if (date_overflows(committer_date))
+		committer_date = 0;
+
+	show_date_relative_diff(author_date, committer_date, sb);
+}
+
 static inline void strbuf_add_with_color(struct strbuf *sb, const char *color,
 					 const char *buf, size_t buflen)
 {
@@ -784,6 +805,53 @@ static int mailmap_name(const char **email, size_t *email_len,
 		read_mailmap(mail_map);
 	}
 	return mail_map->nr && map_user(mail_map, email, email_len, name, name_len);
+}
+
+static size_t format_cross_person_part(struct strbuf *sb, char part,
+				       const char *author_msg, int author_len,
+				       const char *committer_msg, int committer_len,
+				       const struct date_mode *dmode)
+{
+	/* currently all placeholders have same length */
+	const int placeholder_len = 2;
+	struct ident_split author_s, committer_s;
+	timestamp_t author_ts, committer_ts;
+
+	if (split_ident_line(&author_s, author_msg, author_len) < 0
+	    || split_ident_line(&committer_s, committer_msg, committer_len) < 0)
+		goto skip;
+
+	if (!author_s.date_begin
+	    || !committer_s.date_begin)
+		goto skip;
+
+	if (part == 't') {	/* date, UNIX timestamp */
+		author_ts = parse_timestamp(author_s.date_begin, NULL, 10);
+		committer_ts = parse_timestamp(committer_s.date_begin, NULL, 10);
+		strbuf_addf(sb, "%ld", committer_ts - author_ts);
+		return placeholder_len;
+	}
+
+	switch (part) {
+	case 'r':	/* date, relative */
+		show_cross_ident_date(sb, &author_s, &committer_s, DATE_MODE(RELATIVE));
+		return placeholder_len;
+	case 'h':	/* date, human */
+		show_cross_ident_date(sb, &author_s, &committer_s, DATE_MODE(HUMAN));
+		return placeholder_len;
+	}
+
+skip:
+	/*
+	 * reading from either a bogus commit, or a reflog entry with
+	 * %gn, %ge, etc.; 'sb' cannot be updated, but we still need
+	 * to compute a valid return value.
+	 */
+	if (part == 'n' || part == 'e' || part == 't' || part == 'd'
+	    || part == 'D' || part == 'r' || part == 'i')
+		return placeholder_len;
+
+	return 0; /* unknown placeholder */
 }
 
 static size_t format_person_part(struct strbuf *sb, char part,
@@ -1730,6 +1798,11 @@ static size_t format_commit_one(struct strbuf *sb, /* in UTF-8 */
 		return format_person_part(sb, placeholder[1],
 				   msg + c->committer.off, c->committer.len,
 				   c->pretty_ctx->date_mode);
+	case 'j':	/* cross-author/committer ... */
+		return format_cross_person_part(sb, placeholder[1],
+				   msg + c->author.off, c->author.len,
+				   msg + c->committer.off, c->committer.len,
+				   &c->pretty_ctx->date_mode);
 	case 'e':	/* encoding */
 		if (c->commit_encoding)
 			strbuf_addstr(sb, c->commit_encoding);

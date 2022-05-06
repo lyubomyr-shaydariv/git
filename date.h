@@ -62,6 +62,7 @@ void parse_date_format(const char *format, struct date_mode *mode);
 void date_mode_release(struct date_mode *mode);
 
 void show_date_relative(timestamp_t time, struct strbuf *timebuf);
+void show_date_relative_diff(timestamp_t time_base, timestamp_t time, struct strbuf *timebuf);
 int parse_date(const char *date, struct strbuf *out);
 int parse_date_basic(const char *date, timestamp_t *timestamp, int *offset);
 int parse_expiry_date(const char *date, timestamp_t *timestamp);
