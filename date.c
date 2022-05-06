@@ -209,6 +209,81 @@ void show_date_relative(timestamp_t time, struct strbuf *timebuf)
 		 (diff + 183) / 365);
 }
 
+void show_date_relative_diff(timestamp_t time_base, timestamp_t time, struct strbuf *timebuf)
+{
+//	struct timeval now;
+	timestamp_t diff;
+
+//	get_time(&now);
+	if (time < time_base) {
+		strbuf_addstr(timebuf, _("in the future"));
+		return;
+	}
+	diff = time - time_base;
+	if (diff < 90) {
+		strbuf_addf(timebuf,
+			 Q_("%"PRItime" second", "%"PRItime" seconds", diff), diff);
+		return;
+	}
+	/* Turn it into minutes */
+	diff = (diff + 30) / 60;
+	if (diff < 90) {
+		strbuf_addf(timebuf,
+			 Q_("%"PRItime" minute", "%"PRItime" minutes", diff), diff);
+		return;
+	}
+	/* Turn it into hours */
+	diff = (diff + 30) / 60;
+	if (diff < 36) {
+		strbuf_addf(timebuf,
+			 Q_("%"PRItime" hour", "%"PRItime" hours", diff), diff);
+		return;
+	}
+	/* We deal with number of days from here on */
+	diff = (diff + 12) / 24;
+	if (diff < 14) {
+		strbuf_addf(timebuf,
+			 Q_("%"PRItime" day", "%"PRItime" days", diff), diff);
+		return;
+	}
+	/* Say weeks for the past 10 weeks or so */
+	if (diff < 70) {
+		strbuf_addf(timebuf,
+			 Q_("%"PRItime" week", "%"PRItime" weeks", (diff + 3) / 7),
+			 (diff + 3) / 7);
+		return;
+	}
+	/* Say months for the past 12 months or so */
+	if (diff < 365) {
+		strbuf_addf(timebuf,
+			 Q_("%"PRItime" month", "%"PRItime" months", (diff + 15) / 30),
+			 (diff + 15) / 30);
+		return;
+	}
+	/* Give years and months for 5 years or so */
+	if (diff < 1825) {
+		timestamp_t totalmonths = (diff * 12 * 2 + 365) / (365 * 2);
+		timestamp_t years = totalmonths / 12;
+		timestamp_t months = totalmonths % 12;
+		if (months) {
+			struct strbuf sb = STRBUF_INIT;
+			strbuf_addf(&sb, Q_("%"PRItime" year", "%"PRItime" years", years), years);
+			strbuf_addf(timebuf,
+				 /* TRANSLATORS: "%s" is "<n> years" */
+				 Q_("%s, %"PRItime" month", "%s, %"PRItime" months", months),
+				 sb.buf, months);
+			strbuf_release(&sb);
+		} else
+			strbuf_addf(timebuf,
+				 Q_("%"PRItime" year", "%"PRItime" years", years), years);
+		return;
+	}
+	/* Otherwise, just years. Centuries is probably overkill. */
+	strbuf_addf(timebuf,
+		 Q_("%"PRItime" year", "%"PRItime" years", (diff + 183) / 365),
+		 (diff + 183) / 365);
+}
+
 struct date_mode date_mode_from_type(enum date_mode_type type)
 {
 	struct date_mode mode = DATE_MODE_INIT;
