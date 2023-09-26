@@ -58,6 +58,12 @@ enum {
 	TAGS_SET = 2
 };
 
+enum {
+	NOTES_UNSET = 0,
+	NOTES_DEFAULT = 1,
+	NOTES_SET = 2
+};
+
 enum display_format {
 	DISPLAY_FORMAT_FULL,
 	DISPLAY_FORMAT_COMPACT,
@@ -87,6 +93,7 @@ static int write_fetch_head = 1;
 static int verbosity, deepen_relative, set_upstream, refetch;
 static int progress = -1;
 static int tags = TAGS_DEFAULT, update_shallow, deepen;
+static int notes = NOTES_DEFAULT;
 static int atomic_fetch;
 static enum transport_family family;
 static const char *depth;
@@ -1749,6 +1756,11 @@ static int do_fetch(struct transport *transport,
 		strvec_push(&transport_ls_refs_options.ref_prefixes,
 			    "refs/tags/");
 
+	if (notes == NOTES_SET) {
+		strvec_push(&transport_ls_refs_options.ref_prefixes,
+			    "refs/notes/");
+	}
+
 	if (do_set_head)
 		strvec_push(&transport_ls_refs_options.ref_prefixes,
 			    "HEAD");
@@ -2045,6 +2057,10 @@ static void add_options_to_argv(struct strvec *argv,
 		strvec_push(argv, "--tags");
 	else if (tags == TAGS_UNSET)
 		strvec_push(argv, "--no-tags");
+	if (notes == NOTES_SET)
+		strvec_push(argv, "--notes");
+	else if (notes == NOTES_UNSET)
+		strvec_push(argv, "--no-notes");
 	if (verbosity >= 2)
 		strvec_push(argv, "-v");
 	if (verbosity >= 1)
@@ -2349,6 +2365,8 @@ int cmd_fetch(int argc,
 			    N_("fetch all tags and associated objects"), TAGS_SET),
 		OPT_SET_INT('n', NULL, &tags,
 			    N_("do not fetch all tags (--no-tags)"), TAGS_UNSET),
+		OPT_SET_INT(0, "notes", &notes,
+			    N_("fetch all notes"), NOTES_SET),
 		OPT_INTEGER('j', "jobs", &max_jobs,
 			    N_("number of submodules fetched in parallel")),
 		OPT_BOOL(0, "prefetch", &prefetch,
