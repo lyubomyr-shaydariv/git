@@ -550,6 +550,7 @@ int cmd_push(int argc,
 {
 	int flags = 0;
 	int tags = 0;
+	int notes = 0;
 	int push_cert = -1;
 	int rc;
 	const char *repo = NULL;	/* default repository */
@@ -567,6 +568,7 @@ int cmd_push(int argc,
 			    (TRANSPORT_PUSH_MIRROR|TRANSPORT_PUSH_FORCE)),
 		OPT_BOOL('d', "delete", &deleterefs, N_("delete refs")),
 		OPT_BOOL( 0 , "tags", &tags, N_("push tags (can't be used with --all or --branches or --mirror)")),
+		OPT_BOOL( 0 , "notes", &notes, N_("push notes")), // TODO does it conflict with --all or --mirror just like --tags does?
 		OPT_BIT('n' , "dry-run", &flags, N_("dry run"), TRANSPORT_PUSH_DRY_RUN),
 		OPT_BIT( 0,  "porcelain", &flags, N_("machine-readable output"), TRANSPORT_PUSH_PORCELAIN),
 		OPT_BIT('f', "force", &flags, N_("force updates"), TRANSPORT_PUSH_FORCE),
@@ -621,6 +623,9 @@ int cmd_push(int argc,
 
 	if (tags)
 		refspec_append(&rs, "refs/tags/*");
+
+	if (notes)
+		refspec_append(&rs, "refs/notes/*");
 
 	if (argc > 0)
 		repo = argv[0];
