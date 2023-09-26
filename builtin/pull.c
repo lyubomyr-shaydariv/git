@@ -105,6 +105,7 @@ static const char *opt_append;
 static const char *opt_upload_pack;
 static int opt_force;
 static const char *opt_tags;
+static const char *opt_notes;
 static const char *opt_prune;
 static const char *max_children;
 static int opt_dry_run;
@@ -206,6 +207,9 @@ static struct option pull_options[] = {
 	OPT__FORCE(&opt_force, N_("force overwrite of local branch"), 0),
 	OPT_PASSTHRU('t', "tags", &opt_tags, NULL,
 		N_("fetch all tags and associated objects"),
+		PARSE_OPT_NOARG),
+	OPT_PASSTHRU(0, "notes", &opt_notes, NULL,
+		N_("fetch all notes"),
 		PARSE_OPT_NOARG),
 	OPT_PASSTHRU('p', "prune", &opt_prune, NULL,
 		N_("prune remote-tracking branches no longer on remote"),
@@ -548,6 +552,8 @@ static int run_fetch(const char *repo, const char **refspecs)
 	argv_push_force(&cmd.args);
 	if (opt_tags)
 		strvec_push(&cmd.args, opt_tags);
+	if (opt_notes)
+		strvec_push(&cmd.args, opt_notes);
 	if (opt_prune)
 		strvec_push(&cmd.args, opt_prune);
 	if (recurse_submodules_cli != RECURSE_SUBMODULES_DEFAULT)
