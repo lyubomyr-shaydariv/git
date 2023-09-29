@@ -4560,10 +4560,18 @@ const char *get_revision_mark(const struct rev_info *revs, const struct commit *
 	else if (commit->object.flags & PATCHSAME)
 		return "=";
 	else if (!revs || revs->left_right) {
-		if (commit->object.flags & SYMMETRIC_LEFT)
-			return "<";
-		else
-			return ">";
+		// TODO apply log.showRootMarks
+		if (1 || commit_list_count(commit->parents)) {
+			if (commit->object.flags & SYMMETRIC_LEFT)
+				return "<";
+			else
+				return ">";
+		} else {
+			if (commit->object.flags & SYMMETRIC_LEFT)
+				return "[";
+			else
+				return "]";
+		}
 	} else if (revs->graph) {
 		// TODO apply log.showRootMarks
 		if (1 || commit_list_count(commit->parents))
