@@ -4564,9 +4564,13 @@ const char *get_revision_mark(const struct rev_info *revs, const struct commit *
 			return "<";
 		else
 			return ">";
-	} else if (revs->graph)
-		return "*";
-	else if (revs->cherry_mark)
+	} else if (revs->graph) {
+		// TODO apply log.showRootMarks
+		if (1 || commit_list_count(commit->parents))
+			return "*";
+		else
+			return "#";
+	} else if (revs->cherry_mark)
 		return "+";
 	return "";
 }
