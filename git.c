@@ -29,6 +29,7 @@
 #define DELAY_PAGER_CONFIG	(1<<4)
 #define NO_PARSEOPT		(1<<5) /* parse-options is not used */
 #define DEPRECATED		(1<<6)
+#define NO_RUN_SETUP		(1<<7) /* explicitly allow a git command run out of a git directory if other flags are set */
 
 struct cmd_struct {
 	const char *cmd;
@@ -469,7 +470,7 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv, struct
 	int no_repo = 1;
 	struct stat st;
 	const char *prefix;
-	int run_setup = (p->option & (RUN_SETUP | RUN_SETUP_GENTLY));
+	int run_setup = (p->option & (RUN_SETUP | RUN_SETUP_GENTLY | NO_RUN_SETUP));
 
 	help = argc == 2 && (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help-all"));
 	if (help && (run_setup & RUN_SETUP))
@@ -477,6 +478,10 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv, struct
 		run_setup = RUN_SETUP_GENTLY;
 
 	if (run_setup & RUN_SETUP) {
+// lsh: NO_RUN_SETUP
+		if (run_setup & NO_RUN_SETUP) {
+			puts("lsh: no run setup");
+		}
 		prefix = setup_git_directory();
 		no_repo = 0;
 	} else if (run_setup & RUN_SETUP_GENTLY) {
@@ -625,7 +630,7 @@ static struct cmd_struct commands[] = {
 	{ "prune", cmd_prune, RUN_SETUP },
 	{ "prune-packed", cmd_prune_packed, RUN_SETUP },
 	{ "pull", cmd_pull, RUN_SETUP | NEED_WORK_TREE },
-	{ "push", cmd_push, RUN_SETUP },
+	{ "push", cmd_push, RUN_SETUP | NO_RUN_SETUP },
 	{ "range-diff", cmd_range_diff, RUN_SETUP | USE_PAGER },
 	{ "read-tree", cmd_read_tree, RUN_SETUP },
 	{ "rebase", cmd_rebase, RUN_SETUP | NEED_WORK_TREE },
