@@ -1766,7 +1766,7 @@ const char *setup_git_directory_gently(int *nongit_ok)
 			die(_("cannot change to '%s'"), dir.buf);
 		prefix = setup_bare_git_dir(&cwd, dir.len, &repo_fmt, nongit_ok);
 		break;
-	case GIT_DIR_HIT_CEILING:
+	case GIT_DIR_HIT_CEILING: // TODO skip for `git push URL :branch-to-delete`
 		if (!nongit_ok)
 			die(_("not a git repository (or any of the parent directories): %s"),
 			    DEFAULT_GIT_DIR_ENVIRONMENT);
