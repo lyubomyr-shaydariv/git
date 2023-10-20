@@ -978,6 +978,7 @@ static enum verify_path_result verify_path_internal(const char *path,
 	if (has_dos_drive_prefix(path))
 		return PATH_INVALID;
 
+// TODO: always allow DOS names
 	if (!is_valid_path(path))
 		return PATH_INVALID;
 
