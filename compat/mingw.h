@@ -65,6 +65,7 @@ int is_path_owned_by_current_sid(const char *path, struct strbuf *report);
  *
  * Returns 1 upon success, otherwise 0.
  */
+// TODO: always allow DOS names
 int is_valid_win32_path(const char *path, int allow_literal_nul);
 #define is_valid_path(path) is_valid_win32_path(path, 0)
 
