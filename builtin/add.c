@@ -231,7 +231,7 @@ static int edit_patch(struct repository *repo,
 static const char ignore_error[] =
 N_("The following paths are ignored by one of your .gitignore files:\n");
 
-static int verbose, show_only, ignored_too, refresh_only;
+static int cfg_verbose, arg_verbose, show_only, ignored_too, refresh_only;
 static int ignore_add_errors, intent_to_add, ignore_missing;
 static int warn_on_embedded_repo = 1;
 
@@ -252,7 +252,7 @@ static int ignore_removal_cb(const struct option *opt, const char *arg, int unse
 
 static struct option builtin_add_options[] = {
 	OPT__DRY_RUN(&show_only, N_("dry run")),
-	OPT__VERBOSE(&verbose, N_("be verbose")),
+	OPT__VERBOSE(&arg_verbose, N_("be verbose")),
 	OPT_GROUP(""),
 	OPT_BOOL('i', "interactive", &add_interactive, N_("interactive picking")),
 	OPT_BOOL('p', "patch", &patch_interactive, N_("select hunks interactively")),
@@ -287,6 +287,11 @@ static int add_config(const char *var, const char *value,
 	if (!strcmp(var, "add.ignoreerrors") ||
 	    !strcmp(var, "add.ignore-errors")) {
 		ignore_add_errors = git_config_bool(var, value);
+		return 0;
+	}
+
+	if (!strcmp(var, "add.verbose")) {
+		cfg_verbose = git_config_bool(var, value);
 		return 0;
 	}
 
@@ -384,6 +389,7 @@ int cmd_add(int argc,
 	int exit_status = 0;
 	struct pathspec pathspec;
 	struct dir_struct dir = DIR_INIT;
+	int verbose = -1;
 	int flags;
 	int add_new_files;
 	int require_pathspec;
@@ -479,6 +485,8 @@ int cmd_add(int argc,
 	if (!take_worktree_changes && addremove_explicit < 0 && pathspec.nr)
 		/* Turn "git add pathspec..." to "git add -A pathspec..." */
 		addremove = 1;
+
+	verbose = cfg_verbose || arg_verbose;
 
 	flags = ((verbose ? ADD_CACHE_VERBOSE : 0) |
 		 (show_only ? ADD_CACHE_PRETEND : 0) |
