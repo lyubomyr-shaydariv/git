@@ -1,0 +1,3 @@
+#!/bin/sh
+
+./git --no-pager log --patch -1 --reverse --graph --no-graph e83c5163316f89bfbde7d9ab23ca2e25604af290
