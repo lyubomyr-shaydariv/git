@@ -2304,6 +2304,23 @@ static timestamp_t parse_age(const char *arg)
 	return num;
 }
 
+static int is_overridden(int argc, const char **argv, const char * overriding) {
+	if (argc <= 1) {
+		return 0;
+	}
+	const char *overridable = argv[0];
+	for (int i = argc - 1; i > 0; i--) {
+		const char *current = argv[i];
+		if (!strcmp(current, overridable)) {
+			break;
+		}
+		if (!strcmp(current, overriding)) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 static int handle_revision_opt(struct rev_info *revs, int argc, const char **argv,
 			       int *unkc, const char **unkv,
 			       const struct setup_revision_opt* opt)
@@ -2590,11 +2607,15 @@ static int handle_revision_opt(struct rev_info *revs, int argc, const char **arg
 		revs->pretty_given = 1;
 		revs->abbrev_commit = 1;
 	} else if (!strcmp(arg, "--graph")) {
-		graph_clear(revs->graph);
-		revs->graph = graph_init(revs);
+		if (!is_overridden(argc, argv, "--no-graph")) {
+			graph_clear(revs->graph);
+			revs->graph = graph_init(revs);
+		}
 	} else if (!strcmp(arg, "--no-graph")) {
-		graph_clear(revs->graph);
-		revs->graph = NULL;
+		if (!is_overridden(argc, argv, "--graph")) {
+			graph_clear(revs->graph);
+			revs->graph = NULL;
+		}
 	} else if (!strcmp(arg, "--encode-email-headers")) {
 		revs->encode_email_headers = 1;
 	} else if (!strcmp(arg, "--no-encode-email-headers")) {
