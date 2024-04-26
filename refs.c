@@ -212,32 +212,54 @@ static int check_refname_component(const char *refname, int *flags,
 				if (sanitized)
 					/* collapse ".." to single "." */
 					strbuf_setlen(sanitized, sanitized->len - 1);
-				else
+				else {
+					if (*flags & REFNAME_EXPLAIN_TO_STDERR) {
+						fputs("git-check-ref-format: cannot have two consecutive dots .. anywhere\n", stderr);
+					}
 					return -1;
+				}
 			}
 			break;
 		case 3:
 			if (last == '@') { /* Refname contains "@{". */
 				if (sanitized)
 					sanitized->buf[sanitized->len-1] = '-';
-				else
+				else {
+					if (*flags & REFNAME_EXPLAIN_TO_STDERR) {
+						fputs("git-check-ref-format: cannot contain a sequence @{\n", stderr);
+					}
 					return -1;
+				}
 			}
 			break;
 		case 4:
 			/* forbidden char */
 			if (sanitized)
 				sanitized->buf[sanitized->len-1] = '-';
-			else
+			else {
+				if (*flags & REFNAME_EXPLAIN_TO_STDERR) {
+					if (ch == '?' || ch == '[') {
+						fputs("git-check-ref-format: cannot have question-mark ?, asterisk *, or open bracket [ anywhere\n", stderr);
+					} else if (ch == '\\') {
+						fputs("git-check-ref-format: cannot contain a \\\n", stderr);
+					} else  {
+						fputs("git-check-ref-format: cannot have ASCII control characters (i.e. bytes whose values are lower than \\040, or \\177 DEL), space, tilde ~, caret ^, or colon : anywhere\n", stderr);
+					}
+				}
 				return -1;
+			}
 			break;
 		case 5:
 			if (!(*flags & REFNAME_REFSPEC_PATTERN)) {
 				/* refspec can't be a pattern */
 				if (sanitized)
 					sanitized->buf[sanitized->len-1] = '-';
-				else
+				else {
+					if (*flags & REFNAME_EXPLAIN_TO_STDERR) {
+						fprintf(stderr, "git-check-ref-format: %d\n", __LINE__); // TODO
+					}
 					return -1;
+				}
 			}
 
 			/*
@@ -256,17 +278,28 @@ out:
 	if (refname[0] == '.') { /* Component starts with '.'. */
 		if (sanitized)
 			sanitized->buf[component_start] = '-';
-		else
+		else {
+			if (*flags & REFNAME_EXPLAIN_TO_STDERR) {
+				fputs("git-check-ref-format: can include slash / for hierarchical (directory) grouping, but no slash-separated component can begin with a dot . or end with the sequence .lock\n", stderr);
+			}
 			return -1;
+		}
 	}
 	if (cp - refname >= LOCK_SUFFIX_LEN &&
 	    !memcmp(cp - LOCK_SUFFIX_LEN, LOCK_SUFFIX, LOCK_SUFFIX_LEN)) {
-		if (!sanitized)
+		if (!sanitized) {
+			if (*flags & REFNAME_EXPLAIN_TO_STDERR) {
+				fputs("git-check-ref-format: can include slash / for hierarchical (directory) grouping, but no slash-separated component can begin with a dot . or end with the sequence .lock\n", stderr);
+			}
 			return -1;
+		}
 		/* Refname ends with ".lock". */
 		while (strbuf_strip_suffix(sanitized, LOCK_SUFFIX)) {
 			/* try again in case we have .lock.lock */
 		}
+	}
+	if (*flags & REFNAME_EXPLAIN_TO_STDERR) {
+//		fprintf(stderr, "git-check-ref-format: %d %ld\n", __LINE__, cp - refname); // TODO
 	}
 	return cp - refname;
 }
@@ -280,8 +313,12 @@ static int check_or_sanitize_refname(const char *refname, int flags,
 		/* Refname is a single character '@'. */
 		if (sanitized)
 			strbuf_addch(sanitized, '-');
-		else
+		else {
+			if (flags & REFNAME_EXPLAIN_TO_STDERR) {
+				fputs("git-check-ref-format: cannot be the single character @\n", stderr);
+			}
 			return -1;
+		}
 	}
 
 	while (1) {
@@ -307,8 +344,12 @@ static int check_or_sanitize_refname(const char *refname, int flags,
 		/* Refname ends with '.'. */
 		if (sanitized)
 			; /* omit ending dot */
-		else
+		else {
+			if (flags & REFNAME_EXPLAIN_TO_STDERR) {
+				fputs("git-check-ref-format: cannot end with a dot .\n", stderr);
+			}
 			return -1;
+		}
 	}
 	if (!(flags & REFNAME_ALLOW_ONELEVEL) && component_count < 2)
 		return -1; /* Refname has only one component. */
