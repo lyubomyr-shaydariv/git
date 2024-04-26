@@ -1,0 +1,36 @@
+#!/bin/bash
+
+set -TEeuo pipefail
+
+__test() {
+	local EXPECTED_MESSAGE="$1"
+	shift
+	echo -en "TEST \e[0;2m<$EXPECTED_MESSAGE>\e[0m "
+	read -r ACTUAL_MESSAGE < <(./git check-ref-format --explain-to-stderr "$@" 2>&1) || true
+	if [[ "$EXPECTED_MESSAGE" != "$ACTUAL_MESSAGE" ]]; then
+		echo -e "\e[0;37;41mFAIL\e[0m\n\texpected \e[0;32m<$EXPECTED_MESSAGE>\e[0m\n\tactual:  \e[0;31m<$ACTUAL_MESSAGE>\e[0;32m"
+		return 1
+	fi
+	echo -e "\e[0;32mPASS\e[0m"
+}
+
+__test 'git-check-ref-format: can include slash / for hierarchical (directory) grouping, but no slash-separated component can begin with a dot . or end with the sequence .lock' 'refs/heads/.master'
+__test 'git-check-ref-format: can include slash / for hierarchical (directory) grouping, but no slash-separated component can begin with a dot . or end with the sequence .lock' 'refs/heads/master.lock'
+#TODO:LAST __test 'git-check-ref-format: must contain at least one /. This enforces the presence of a category like heads/, tags/ etc. but the actual names are not restricted. If the --allow-onelevel option is used, this rule is waived' 'refs'
+__test 'git-check-ref-format: cannot have two consecutive dots .. anywhere' 'refs/heads/../master'
+__test 'git-check-ref-format: cannot have two consecutive dots .. anywhere' 'refs/heads/master..master'
+__test 'git-check-ref-format: cannot have ASCII control characters (i.e. bytes whose values are lower than \040, or \177 DEL), space, tilde ~, caret ^, or colon : anywhere' 'refs/heads/ '$'\t''master'
+__test 'git-check-ref-format: cannot have ASCII control characters (i.e. bytes whose values are lower than \040, or \177 DEL), space, tilde ~, caret ^, or colon : anywhere' 'refs/heads/ '$'\x7F''master'
+__test 'git-check-ref-format: cannot have ASCII control characters (i.e. bytes whose values are lower than \040, or \177 DEL), space, tilde ~, caret ^, or colon : anywhere' 'refs/heads/ master'
+__test 'git-check-ref-format: cannot have ASCII control characters (i.e. bytes whose values are lower than \040, or \177 DEL), space, tilde ~, caret ^, or colon : anywhere' 'refs/heads/^master'
+__test 'git-check-ref-format: cannot have ASCII control characters (i.e. bytes whose values are lower than \040, or \177 DEL), space, tilde ~, caret ^, or colon : anywhere' 'refs/heads/:master'
+__test 'git-check-ref-format: cannot have question-mark ?, asterisk *, or open bracket [ anywhere' 'refs/heads/?master'
+#TODO:LAST __test 'git-check-ref-format: cannot have question-mark ?, asterisk *, or open bracket [ anywhere' 'refs/heads/*master'
+__test 'git-check-ref-format: cannot have question-mark ?, asterisk *, or open bracket [ anywhere' 'refs/heads/[master'
+#TODO:LAST __test 'git-check-ref-format: cannot begin or end with a slash / or contain multiple consecutive slashes' '/refs/heads/master'
+#TODO:LAST __test 'git-check-ref-format: cannot begin or end with a slash / or contain multiple consecutive slashes' 'refs/heads/master/'
+#TODO:LAST __test 'git-check-ref-format: cannot begin or end with a slash / or contain multiple consecutive slashes 'refs/heads///master'
+__test 'git-check-ref-format: cannot end with a dot .' 'refs/heads/master.'
+__test 'git-check-ref-format: cannot contain a sequence @{' 'refs/heads/master@{u}'
+__test 'git-check-ref-format: cannot be the single character @' --allow-onelevel '@'
+__test 'git-check-ref-format: cannot contain a \' 'refs/heads/q\1'
