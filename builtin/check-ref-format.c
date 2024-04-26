@@ -77,6 +77,8 @@ int cmd_check_ref_format(int argc, const char **argv, const char *prefix)
 			flags &= ~REFNAME_ALLOW_ONELEVEL;
 		else if (!strcmp(argv[i], "--refspec-pattern"))
 			flags |= REFNAME_REFSPEC_PATTERN;
+		else if (!strcmp(argv[i], "--explain-to-stderr"))
+			flags |= REFNAME_EXPLAIN_TO_STDERR;
 		else
 			usage(builtin_check_ref_format_usage);
 	}
