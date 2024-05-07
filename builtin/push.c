@@ -574,9 +574,26 @@ static int git_push_config(const char *k, const char *v,
 	return git_default_config(k, v, ctx, NULL);
 }
 
+static const int EXT_FLAG_DENY_MIRROR_ARG = 1 << 0;
+
+static int git_push_config_ext(const char *k, const char *v,
+			   const struct config_context *ctx, void *cb)
+{
+	int * const ext_flags = cb;
+
+	if (!strcmp(k, "push.denymirrorarg")) {
+		if (git_config_bool(k, v))
+			*ext_flags |= EXT_FLAG_DENY_MIRROR_ARG;
+		return 0;
+	}
+
+	return git_default_config(k, v, ctx, NULL);
+}
+
 int cmd_push(int argc, const char **argv, const char *prefix)
 {
 	int flags = 0;
+	int ext_flags = 0;
 	int tags = 0;
 	int push_cert = -1;
 	int rc;
@@ -627,7 +644,9 @@ int cmd_push(int argc, const char **argv, const char *prefix)
 
 	packet_trace_identity("push");
 	git_config(git_push_config, &flags);
+	git_config(git_push_config_ext, &ext_flags);
 	argc = parse_options(argc, argv, prefix, options, push_usage, 0);
+
 	push_options = (push_options_cmdline.nr
 		? &push_options_cmdline
 		: &push_options_config);
@@ -671,6 +690,9 @@ int cmd_push(int argc, const char **argv, const char *prefix)
 
 	if (remote->mirror)
 		flags |= (TRANSPORT_PUSH_MIRROR|TRANSPORT_PUSH_FORCE);
+	else if (ext_flags & EXT_FLAG_DENY_MIRROR_ARG && (flags & (TRANSPORT_PUSH_MIRROR|TRANSPORT_PUSH_FORCE)) == (TRANSPORT_PUSH_MIRROR|TRANSPORT_PUSH_FORCE) ) {
+		die(_("non-mirror remote --mirror blocked by push.denyMirrorArg"));
+	}
 
 	if (flags & TRANSPORT_PUSH_ALL) {
 		if (argc >= 2)
