@@ -2020,6 +2020,7 @@ static enum path_treatment treat_directory(struct dir_struct *dir,
 
 			return path_none;
 		}
+printf("\t%s:%d\t(EMPTY DIR)\n", __FILE__, __LINE__);
 		return path_recurse;
 	}
 
